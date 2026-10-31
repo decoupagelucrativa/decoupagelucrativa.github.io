@@ -609,7 +609,14 @@ fbq('track','PageView');
 <script>
 (function(){
   // Links de checkout
-  function setLinks(sel,url){document.querySelectorAll(sel).forEach(function(a){a.href=url;});}
+  // Repassa UTMs e parâmetros de rastreio (Utmify) da página para o checkout
+  var KEEP=/^(utm_|src$|sck$|xcod$|fbclid$|gclid$|ttclid$)/;
+  var qs=new URLSearchParams(location.search);
+  try{var saved=JSON.parse(sessionStorage.getItem('dl_utms')||'{}');}catch(e){var saved={};}
+  qs.forEach(function(v,k){if(KEEP.test(k))saved[k]=v;});
+  try{sessionStorage.setItem('dl_utms',JSON.stringify(saved));}catch(e){}
+  function withUtms(url){try{var u=new URL(url);Object.keys(saved).forEach(function(k){if(!u.searchParams.has(k))u.searchParams.set(k,saved[k]);});return u.toString();}catch(e){return url;}}
+  function setLinks(sel,url){document.querySelectorAll(sel).forEach(function(a){a.href=withUtms(url);});}
   setLinks('.js-completo',window.CHECKOUT_COMPLETO);
   setLinks('.js-basico',window.CHECKOUT_BASICO);
   document.querySelectorAll('.js-completo,.js-basico').forEach(function(a){a.addEventListener('click',function(){try{fbq('track','InitiateCheckout',{value:a.classList.contains('js-basico')?19.90:37.00,currency:'BRL'});}catch(e){}});});
